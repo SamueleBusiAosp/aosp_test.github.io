@@ -1,0 +1,26 @@
+[
+  {
+    "label": "T001 — SEDE DEMO CARDIOLOGIA",
+    "value": "T001 - SEDE DEMO CARDIOLOGIA"
+  },
+  {
+    "label": "T002 — SEDE DEMO MEDICINA INTERNA",
+    "value": "T002 - SEDE DEMO MEDICINA INTERNA"
+  },
+  {
+    "label": "T003 — SEDE DEMO PEDIATRIA",
+    "value": "T003 - SEDE DEMO PEDIATRIA"
+  },
+  {
+    "label": "T004 — SEDE DEMO RADIOLOGIA",
+    "value": "T004 - SEDE DEMO RADIOLOGIA"
+  },
+  {
+    "label": "T005 — SEDE DEMO PNEUMOLOGIA",
+    "value": "T005 - SEDE DEMO PNEUMOLOGIA"
+  },
+  {
+    "label": "T006 — SEDE DEMO NEFROLOGIA",
+    "value": "T006 - SEDE DEMO NEFROLOGIA"
+  }
+]

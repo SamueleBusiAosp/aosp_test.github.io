@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ElixForms · Autocomplete API Test</title>
+  <style>
+    :root {font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:#202636; background:#f5f6f9}
+    * {box-sizing:border-box}
+    body {margin:0}
+    header {background:#242c46;color:white;padding:28px 24px}
+    main {max-width:900px;margin:38px auto;padding:0 20px 60px}
+    .eyebrow {font-size:12px;letter-spacing:2px;color:#bcc8ff;text-transform:uppercase;font-weight:700}
+    h1 {margin:6px 0 4px;font-size:clamp(24px,3.2vw,36px);line-height:1.25}
+    header p {margin:7px 0 0;color:#dce2f5}
+    h2 {font-size:19px;margin:0 0 14px}
+    .card {background:white;border:1px solid #dfe3ec;border-radius:14px;padding:24px;margin-top:20px;
+      box-shadow:0 4px 15px #24324e0a}
+    label {display:block;font-size:14px;font-weight:650;margin:0 0 8px}
+    input {width:100%;padding:12px 14px;font:inherit;border:1px solid #aeb6c7;border-radius:9px}
+    input:focus {outline:2px solid #5747ad;outline-offset:2px}
+    .row {display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .code {background:#eef0f5;border-radius:7px;padding:7px 10px;overflow-wrap:anywhere;
+      font:13px/1.6 ui-monospace,Consolas,monospace}
+    a {color:#5340a1}
+    button {font:inherit;font-weight:650;background:#5946a7;color:white;border:0;border-radius:8px;
+      padding:10px 14px;cursor:pointer}
+    button:hover {background:#483688}
+    .subtle {font-size:13px;color:#59647a}
+    .warn {border-left:4px solid #e4ad4d;background:#fff9eb;padding:12px 15px;border-radius:4px;
+      margin-top:15px;color:#624616}
+    ul {margin:0;padding:0;list-style:none}
+    li {border-bottom:1px solid #edf0f5;padding:10px 4px}
+    li:last-child {border-bottom:0}
+    .status {color:#17613c;font-weight:700}
+    .hidden {display:none}
+    pre {white-space:pre-wrap;word-break:break-word;max-height:280px;overflow:auto;
+      background:#171e31;color:#e2e5f3;padding:15px;border-radius:10px;font-size:13px}
+    code {font-family:ui-monospace,Consolas,monospace}
+    footer {margin-top:26px;color:#647083;font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="max-width:900px;margin:auto">
+      <div class="eyebrow">POC · GitHub Pages</div>
+      <h1>ElixForms Autocomplete Test</h1>
+      <p>Endpoint JSON pubblico per verificare il routing del proxy Anthesi e il widget AutocompletePlugin.</p>
+    </div>
+  </header>
+  <main>
+    <section class="card">
+      <h2>Endpoint pubblicato</h2>
+      <div class="row">
+        <div class="code" id="endpoint" style="flex:1" aria-live="polite">sedi.json</div>
+        <button id="copy" type="button">Copia URL</button>
+      </div>
+      <p class="subtle">Risposta attesa: HTTP 200, Content-Type JSON, array di oggetti <code>label</code> e <code>value</code>.</p>
+      <div class="warn"><strong>Limite del test:</strong> GitHub Pages è statico. Una richiesta
+      <code>?term=cardio</code> restituisce comunque tutte le sedi del file.
+      Il filtro qui sotto è eseguito solo dal browser: non dimostra il filtraggio API di ElixForms.</div>
+    </section>
+    <section class="card">
+      <h2>Ricerca locale di prova</h2>
+      <label for="search">Cerca per codice o descrizione</label>
+      <input id="search" type="search" placeholder="Prova a digitare cardio" autocomplete="off">
+      <p class="subtle" id="count" aria-live="polite">Caricamento...</p>
+      <ul id="matches"></ul>
+    </section>
+    <section class="card">
+      <h2>Controllo risposta JSON</h2>
+      <div class="row">
+        <button id="refresh" type="button">Ricarica il JSON</button>
+        <a id="raw" href="./sedi.json" target="_blank" rel="noopener noreferrer">Apri JSON grezzo</a>
+      </div>
+      <p id="status" aria-live="polite"></p>
+      <pre id="json" aria-label="Contenuto JSON">...</pre>
+    </section>
+    <footer>Solo dati dimostrativi. Non inserire credenziali, token API o dati personali in un repository pubblico.</footer>
+  </main>
+  <script>
+  (() => {
+    "use strict";
+    const url = new URL("sedi.json", location.href);
+    const byId = id => document.getElementById(id);
+    let entries = [];
+    byId("endpoint").textContent = url.href;
+    byId("raw").href = url.href;
+    byId("copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(url.href);
+        byId("copy").textContent = "Copiato";
+      } catch {
+        byId("copy").textContent = "Seleziona l'URL";
+      }
+    });
+    function render() {
+      const term = byId("search").value.trim().toLocaleLowerCase("it-IT");
+      const filtered = entries.filter(item =>
+        `${item.label} ${item.value}`.toLocaleLowerCase("it-IT").includes(term));
+      const list = byId("matches");
+      list.replaceChildren();
+      for (const item of filtered) {
+        const li = document.createElement("li");
+        li.textContent = `${item.label}   →   ${item.value}`;
+        list.appendChild(li);
+      }
+      byId("count").textContent = `${filtered.length} di ${entries.length} risultati (filtro locale)`;
+    }
+    async function load() {
+      const status = byId("status");
+      status.textContent = "Verifica in corso...";
+      try {
+        const response = await fetch(url, {cache:"no-store"});
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const result = await response.json();
+        if (!Array.isArray(result) || !result.every(item =>
+           item && typeof item.label === "string" && typeof item.value === "string")) {
+          throw new Error("Formato JSON inatteso: è richiesto un array di {label, value}");
+        }
+        entries = result;
+        byId("json").textContent = JSON.stringify(result, null, 2);
+        status.innerHTML = ""; // no untrusted content inserted
+        status.className = "status";
+        status.textContent = `HTTP 200 · JSON valido · ${result.length} risultati`;
+        render();
+      } catch (error) {
+        entries = [];
+        byId("json").textContent = String(error);
+        status.className = "";
+        status.textContent = "Errore: " + String(error);
+        render();
+      }
+    }
+    byId("search").addEventListener("input", render);
+    byId("refresh").addEventListener("click", load);
+    load();
+  })();
+  </script>
+</body>
+</html>
